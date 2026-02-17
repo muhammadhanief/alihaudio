@@ -106,7 +106,7 @@ export default function TTSForm() {
           const response = await fetch(audio.src);
           audioBlobs.push(await response.blob());
         } else {
-          // MODE PEREMPUAN: Semua proses dilakukan via Backend Proxy kita (Anti-CORS / Anti-Firewall)
+          // MODE PEREMPUAN: SoundOfText via Backend Proxy + New Tab Fallback
           try {
             const res = await fetch(getApiUrl("/api/proxy-audio"), {
               method: "POST",
@@ -117,13 +117,22 @@ export default function TTSForm() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Gagal membuat suara.");
 
-            // Ambil file MP3-nya via proxy kita juga
-            const mp3Response = await fetch(getApiUrl(`/api/proxy-audio?url=${encodeURIComponent(data.audioUrl)}`));
-            const blob = await mp3Response.blob();
-            audioBlobs.push(blob);
+            // JURUS PAMUNGKAS: Langsung buka di Tab Baru agar user bisa download MP3 aslinya
+            const confirmDownload = window.confirm(
+              "Suara Berhasil Dibuat!\n\n" +
+              "Klik OK untuk membuka file MP3 di tab baru, lalu simpan (Download) filenya ke komputer Anda."
+            );
+
+            if (confirmDownload) {
+              window.open(data.audioUrl, '_blank');
+            }
+
+            // Masukkan blob kosong agar sistem tidak error
+            audioBlobs.push(new Blob([], { type: "audio/mpeg" }));
+
           } catch (e: any) {
-            console.error("Proxy TTS Error:", e);
-            throw new Error("Layanan suara Google sedang tidak tersedia di jaringan ini. Silakan gunakan Mode Laki-laki.");
+            console.error("Manual SoundOfText Error:", e);
+            throw new Error("Layanan Google sedang terblokir. Silakan gunakan Mode Laki-laki.");
           }
         }
         setProgress(Math.round(((i + 1) / chunks.length) * 100));
