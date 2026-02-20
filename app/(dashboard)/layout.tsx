@@ -15,7 +15,7 @@ export default function DashboardLayout({
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(getApiUrl("/api/auth/session")).then(async res => {
+        fetch(getApiUrl(`/api/auth/session?_t=${Date.now()}`)).then(async res => {
             if (!res.ok) {
                 router.push("/login");
             } else {
@@ -38,24 +38,16 @@ export default function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-[#fffaf5] flex">
-            {/* Sidebar with dynamic width handled inside */}
             <Sidebar user={user} />
 
             {/* Main Content Area */}
-            <main className="flex-1 ml-[auto] transition-all duration-500 overflow-x-hidden p-4 md:p-6" style={{
-                paddingLeft: "calc(15rem + 1.5rem)"
-            }}>
-                <div className="max-w-7xl mx-auto">
+            {/* Mobile: full width (sidebar adalah overlay) */}
+            {/* Desktop: geser kanan sesuai lebar sidebar (w-60 = 15rem) */}
+            <main className="flex-1 w-full md:pl-60 transition-all duration-500 overflow-x-hidden">
+                <div className="max-w-7xl mx-auto p-4 pt-16 md:pt-6 md:p-6">
                     {children}
                 </div>
             </main>
-
-            {/* Adjustment for collapsed state - needs better logic but for now: */}
-            <style jsx global>{`
-                aside.w-16 + main {
-                    padding-left: calc(4rem + 1.5rem) !important;
-                }
-            `}</style>
         </div>
     );
 }

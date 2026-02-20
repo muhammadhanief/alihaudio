@@ -19,32 +19,32 @@ export default function LandingPage() {
 
   const features = [
     {
-      title: "Suara Laki-laki AI",
-      desc: "Suara 'Onyx' dari OpenAI untuk hasil audio laki-laki yang sangat natural dan manusiawi.",
+      title: "Suara Laki-laki (AI)",
+      desc: "Menggunakan suara 'Onyx' dari OpenAI dengan hasil yang cukup natural untuk keperluan narasi.",
       icon: "🎙️",
       color: "from-orange-400 to-orange-600"
     },
     {
       title: "Suara Perempuan",
-      desc: "Integrasi Google Translate TTS untuk suara perempuan yang bersih, cepat, dan 100% gratis.",
+      desc: "Menggunakan Google Translate TTS — gratis dan cukup untuk kebutuhan sehari-hari.",
       icon: "👩",
       color: "from-amber-400 to-amber-600"
     },
     {
-      title: "Smart Chunking",
-      desc: "Otomatis memproses teks panjang tanpa takut terpotong. Ribuan karakter sekaligus!",
+      title: "Teks Panjang",
+      desc: "Teks panjang diproses secara otomatis per bagian sehingga tidak terpotong.",
       icon: "⚡",
       color: "from-orange-500 to-orange-700"
     },
     {
       title: "Login SSO BPS",
-      desc: "Keamanan terpusat menggunakan akun resmi SSO BPS (Jateng API Connect).",
+      desc: "Menggunakan akun SSO BPS Jawa Tengah, tidak perlu daftar ulang.",
       icon: "🔒",
       color: "from-orange-600 to-orange-800"
     },
     {
-      title: "Simpan MP3 Instan",
-      desc: "Unduh hasil konversi langsung ke perangkat Anda untuk kebutuhan konten apa pun.",
+      title: "Simpan & Unduh MP3",
+      desc: "Hasil konversi tersimpan otomatis dan bisa diunduh kapan saja.",
       icon: "💾",
       color: "from-amber-500 to-amber-700"
     }
@@ -96,12 +96,12 @@ export default function LandingPage() {
 
 
           <h1 className="text-6xl md:text-[100px] font-black tracking-tighter leading-[0.9] mb-8 animate-slide-up">
-            <span className="text-zinc-900 dark:text-white transition-colors">Ubah Kata Jadi </span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-500 to-orange-700">Karya Suara.</span>
+            <span className="text-zinc-900 dark:text-white transition-colors">Teks ke </span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-500 to-orange-700">Audio.</span>
           </h1>
 
           <p className="max-w-2xl text-lg md:text-xl text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mb-12 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Teknologi AI tercanggih untuk pegawai BPS. Konversi naskah berita, narasi, dan teks publik ke audio berkualitas tinggi secara instan.
+            Alat konversi teks ke audio untuk pegawai BPS. Cocok untuk membuat narasi berita atau konten publik.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
@@ -156,7 +156,7 @@ export default function LandingPage() {
 
           <div className="relative z-10">
             <h2 className="text-3xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter mb-8 italic">
-              Siap Mengubah <br className="md:hidden" /> Teks Jadi Audio?
+              Mulai Konversi <br className="md:hidden" /> Sekarang
             </h2>
             <button
               onClick={() => router.push(user ? "/dashboard" : "/login")}
@@ -171,7 +171,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-12 border-t border-orange-200 dark:border-white/5 text-center">
         <p className="text-[10px] font-black tracking-[0.4em] text-orange-700 dark:text-orange-500 uppercase px-6">
-          © 2026 Alih Audio • Pusat Inovasi Digital BPS Jawa Tengah
+          © 2026 Alih Audio BPS Jawa Tengah
         </p>
       </footer>
     </div>

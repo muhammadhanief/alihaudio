@@ -8,10 +8,10 @@ import {
     Globe,
     Users,
     LogOut,
-    ChevronLeft,
-    ChevronRight
+    Menu,
+    X
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/utils";
 
 interface SidebarProps {
@@ -21,15 +21,29 @@ interface SidebarProps {
 export default function Sidebar({ user }: SidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+    const isSuperAdmin = user?.role === 'superadmin';
+
+    // Tutup sidebar saat route berubah (pada mobile)
+    useEffect(() => {
+        setIsOpen(false);
+    }, [pathname]);
+
+    // Tutup sidebar saat klik di luar (overlay)
+    const handleOverlayClick = () => setIsOpen(false);
 
     const handleLogout = async () => {
+        setIsOpen(false);
         await fetch(getApiUrl("/api/auth/logout"), { method: "POST" });
         router.push("/");
     };
 
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-    const isSuperAdmin = user?.role === 'superadmin';
+    const navigate = (path: string) => {
+        setIsOpen(false);
+        router.push(path);
+    };
 
     const menuItems = [
         { name: "Beranda", icon: LayoutDashboard, path: "/dashboard" },
@@ -45,125 +59,134 @@ export default function Sidebar({ user }: SidebarProps) {
         { name: "Manajemen User", icon: Users, path: "/admin/users" },
     ];
 
-    return (
-        <aside
-            className={`fixed left-0 top-0 h-screen bg-white border-r border-orange-100 flex flex-col transition-all duration-500 z-[100] shadow-2xl ${isCollapsed ? 'w-16' : 'w-60'}`}
-        >
-            {/* Logo Area */}
-            <div className="p-4 flex items-center justify-between">
-                {!isCollapsed && (
-                    <div className="flex items-center gap-3 animate-fade-in">
-                        <div className="p-2 rounded-xl bg-orange-600 shadow-lg shadow-orange-600/20">
-                            <Mic2 className="h-5 w-5 text-white" />
-                        </div>
-                        <span className="text-xl font-black tracking-tighter text-zinc-900 uppercase">Alih Audio</span>
-                    </div>
-                )}
-                {isCollapsed && (
-                    <div className="mx-auto p-2 rounded-xl bg-orange-600">
-                        <Mic2 className="h-5 w-5 text-white" />
-                    </div>
-                )}
+    const NavButton = ({ item }: { item: { name: string; icon: any; path: string } }) => {
+        const active = pathname === item.path;
+        return (
+            <button
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${active
+                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
+                    : 'text-zinc-600 hover:bg-orange-50 hover:text-orange-600'
+                    }`}
+            >
+                <item.icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
+                <span className="text-sm font-black tracking-tight">{item.name}</span>
+            </button>
+        );
+    };
+
+    const SidebarContent = () => (
+        <div className="flex flex-col h-full">
+            {/* Logo */}
+            <div className="px-5 py-5 flex items-center gap-3 border-b border-orange-100">
+                <div className="p-2 rounded-xl bg-orange-600 shadow-lg shadow-orange-600/20 flex-shrink-0">
+                    <Mic2 className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-black tracking-tighter text-zinc-900 uppercase">Alih Audio</span>
             </div>
 
-            {/* User Profile Summary */}
-            <div className={`px-4 py-6 border-b border-orange-50 ${isCollapsed ? 'flex justify-center' : ''}`}>
-                <div className={`flex ${isCollapsed ? 'flex-col items-center' : 'flex-row items-start'} gap-3 ${isCollapsed ? '' : 'w-full'}`}>
+            {/* User Profile */}
+            <div className="px-5 py-4 border-b border-orange-50">
+                <div className="flex items-center gap-3">
                     {user?.foto_url ? (
-                        <img src={user.foto_url} alt={user.nama} className="w-10 h-10 rounded-xl object-cover border border-orange-100 shadow-sm flex-shrink-0" />
+                        <img
+                            src={user.foto_url}
+                            alt={user.nama}
+                            className="w-10 h-10 rounded-xl object-cover border border-orange-100 shadow-sm flex-shrink-0"
+                        />
                     ) : (
-                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-black flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-black text-lg flex-shrink-0">
                             {user?.nama?.charAt(0)}
                         </div>
                     )}
-                    {!isCollapsed && (
-                        <div className="flex flex-col">
-                            <span className="text-sm font-black text-zinc-900 leading-tight uppercase break-words">{user?.nama}</span>
-                            <span className="text-[11px] font-bold text-orange-600/70 uppercase tracking-tight mt-0.5">{user?.role}</span>
-                        </div>
-                    )}
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-black text-zinc-900 leading-tight break-words whitespace-normal">{user?.nama}</span>
+                        <span className="text-[11px] font-bold text-orange-600/70 uppercase tracking-tight mt-0.5">{user?.role}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Navigation Menus */}
-            <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-                {/* General Menu */}
-                <div className="space-y-2">
-                    {!isCollapsed && <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Main Menu</label>}
-                    {menuItems.map((item) => (
-                        <button
-                            key={item.path}
-                            onClick={() => router.push(item.path)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${pathname === item.path
-                                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                                : 'text-zinc-500 hover:bg-orange-50 hover:text-orange-600'}`}
-                        >
-                            <item.icon className={`h-5 w-5 ${pathname === item.path ? 'text-white' : 'group-hover:text-orange-600'}`} />
-                            {!isCollapsed && <span className="text-sm font-black tracking-tight">{item.name}</span>}
-                        </button>
-                    ))}
+            {/* Navigation */}
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+                <div className="space-y-1">
+                    <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Main Menu</label>
+                    <div className="space-y-1 mt-1">
+                        {menuItems.map((item) => <NavButton key={item.path} item={item} />)}
+                    </div>
                 </div>
 
-                {/* Admin Menu */}
                 {isAdmin && (
-                    <div className="space-y-2">
-                        {!isCollapsed && <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Admin Tools</label>}
-                        {adminItems.map((item) => (
-                            <button
-                                key={item.path}
-                                onClick={() => router.push(item.path)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${pathname === item.path
-                                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                                    : 'text-zinc-500 hover:bg-orange-50 hover:text-orange-600'}`}
-                            >
-                                <item.icon className={`h-5 w-5 ${pathname === item.path ? 'text-white' : 'group-hover:text-orange-600'}`} />
-                                {!isCollapsed && <span className="text-sm font-black tracking-tight">{item.name}</span>}
-                            </button>
-                        ))}
+                    <div className="space-y-1">
+                        <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Admin Tools</label>
+                        <div className="space-y-1 mt-1">
+                            {adminItems.map((item) => <NavButton key={item.path} item={item} />)}
+                        </div>
                     </div>
                 )}
 
-                {/* Superadmin Menu */}
                 {isSuperAdmin && (
-                    <div className="space-y-2">
-                        {!isCollapsed && <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">System</label>}
-                        {superAdminItems.map((item) => (
-                            <button
-                                key={item.path}
-                                onClick={() => router.push(item.path)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group ${pathname === item.path
-                                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                                    : 'text-zinc-500 hover:bg-orange-50 hover:text-orange-600'}`}
-                            >
-                                <item.icon className={`h-5 w-5 ${pathname === item.path ? 'text-white' : 'group-hover:text-orange-600'}`} />
-                                {!isCollapsed && <span className="text-sm font-black tracking-tight">{item.name}</span>}
-                            </button>
-                        ))}
+                    <div className="space-y-1">
+                        <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">System</label>
+                        <div className="space-y-1 mt-1">
+                            {superAdminItems.map((item) => <NavButton key={item.path} item={item} />)}
+                        </div>
                     </div>
                 )}
             </nav>
 
-            {/* Bottom Actions */}
-            <div className="p-3 border-t border-orange-50 space-y-2">
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-400 hover:bg-orange-50 hover:text-orange-600 transition-all font-black text-xs uppercase"
-                >
-                    {isCollapsed ? <ChevronRight className="h-5 w-5 mx-auto" /> : (
-                        <>
-                            <ChevronLeft className="h-5 w-5" />
-                            <span>Sembunyikan</span>
-                        </>
-                    )}
-                </button>
+            {/* Logout */}
+            <div className="p-3 border-t border-orange-50">
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-50 transition-all group"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all group"
                 >
-                    <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform mx-auto md:mx-0" />
-                    {!isCollapsed && <span className="text-sm font-black tracking-tight uppercase">Keluar</span>}
+                    <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform flex-shrink-0" />
+                    <span className="text-sm font-black tracking-tight uppercase">Keluar</span>
                 </button>
             </div>
-        </aside>
+        </div>
+    );
+
+    return (
+        <>
+            {/* ─── DESKTOP: Sidebar Permanen ─── */}
+            <aside className="hidden md:flex fixed left-0 top-0 h-screen w-60 bg-white border-r border-orange-100 flex-col z-[100] shadow-xl">
+                <SidebarContent />
+            </aside>
+
+            {/* ─── MOBILE: Hamburger Button ─── */}
+            <button
+                onClick={() => setIsOpen(true)}
+                className="md:hidden fixed top-4 left-4 z-[200] p-2.5 bg-white border border-orange-100 rounded-xl shadow-lg text-orange-600 hover:bg-orange-50 transition-all active:scale-95"
+                aria-label="Buka menu"
+            >
+                <Menu className="h-5 w-5" />
+            </button>
+
+            {/* ─── MOBILE: Overlay backdrop ─── */}
+            {isOpen && (
+                <div
+                    className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[150] animate-fade-in"
+                    onClick={handleOverlayClick}
+                />
+            )}
+
+            {/* ─── MOBILE: Slide-in Sidebar ─── */}
+            <aside
+                className={`md:hidden fixed left-0 top-0 h-screen w-72 bg-white z-[200] shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
+            >
+                {/* Tombol tutup */}
+                <button
+                    onClick={() => setIsOpen(false)}
+                    className="absolute top-4 right-4 p-2 rounded-xl bg-orange-50 text-orange-600 hover:bg-orange-100 transition-all z-10"
+                    aria-label="Tutup menu"
+                >
+                    <X className="h-5 w-5" />
+                </button>
+
+                <SidebarContent />
+            </aside>
+        </>
     );
 }

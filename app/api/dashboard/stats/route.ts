@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { cookies } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
     try {
         const cookieStore = await cookies();
@@ -10,7 +12,10 @@ export async function GET() {
         if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const user = JSON.parse(session.value);
-        const nipp = user.nipp;
+        const nipp = user.nipp || user.username || user.nip;
+        if (!nipp) {
+            return NextResponse.json({ error: "Session invalid: NIPP not found" }, { status: 401 });
+        }
 
         // Total conversions by user
         const [totalRows]: any = await pool.query("SELECT COUNT(*) as count FROM conversions WHERE user_nipp = ?", [nipp]);
@@ -26,15 +31,22 @@ export async function GET() {
             GROUP BY DATE(created_at)
             ORDER BY date ASC
         `, [nipp]);
-
-        return NextResponse.json({
+        const response = NextResponse.json({
             stats: {
-                total: totalRows[0].count,
-                modes: modeRows,
-                weekly: weeklyRows
+                total: totalRows[0]?.count || 0,
+                modes: modeRows || [],
+                weekly: weeklyRows || []
             }
         });
-    } catch (error) {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+        // Anti-cache headers
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
+
+        return response;
+    } catch (error: any) {
+        console.error("Dashboard Stats Error:", error);
+        return NextResponse.json({ error: "Internal server error: " + error.message }, { status: 500 });
     }
 }

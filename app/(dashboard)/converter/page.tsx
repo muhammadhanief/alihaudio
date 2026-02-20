@@ -8,7 +8,7 @@ export default function ConverterPage() {
             {/* Header */}
             <div>
                 <h1 className="text-4xl font-black text-orange-950 tracking-tighter uppercase">Alih Audio</h1>
-                <p className="text-orange-900/50 text-xs font-bold uppercase tracking-widest mt-1">Konversi teks Anda menjadi suara berkualitas tinggi</p>
+                <p className="text-orange-900/50 text-xs font-bold uppercase tracking-widest mt-1">Konversi teks menjadi audio</p>
             </div>
 
             {/* Main Form Area */}

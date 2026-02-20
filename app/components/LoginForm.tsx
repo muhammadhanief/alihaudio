@@ -59,7 +59,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                                     placeholder="username.pegawai"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full px-6 py-4 bg-orange-50/50 dark:bg-black/40 border border-orange-100 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all text-orange-950 dark:text-white placeholder-orange-200 dark:placeholder-zinc-800 font-bold"
+                                    className="w-full px-6 py-4 border border-orange-100 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all font-bold"
+                                    style={{ color: '#1c0a00', backgroundColor: 'rgba(255,247,237,0.85)' }}
                                     required
                                 />
                             </div>
@@ -72,7 +73,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-6 py-4 bg-orange-50/50 dark:bg-black/40 border border-orange-100 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all text-orange-950 dark:text-white placeholder-orange-200 dark:placeholder-zinc-800 font-bold"
+                                className="w-full px-6 py-4 border border-orange-100 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all font-bold"
+                                style={{ color: '#1c0a00', backgroundColor: 'rgba(255,247,237,0.85)' }}
                                 required
                             />
                         </div>

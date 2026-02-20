@@ -53,42 +53,58 @@ export async function POST(req: Request) {
             const pool = (await import("@/lib/db")).default;
 
             await pool.query(
-                `INSERT INTO users (nipp, nama, foto_url, satker, jabatan, email, last_login) 
-                 VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                `INSERT INTO users (nipp, nip_lama, nama, foto_url, satker, kd_satker, jabatan, email, last_login) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                  ON DUPLICATE KEY UPDATE 
+                 nip_lama = VALUES(nip_lama),
                  nama = VALUES(nama), 
                  foto_url = VALUES(foto_url), 
                  satker = VALUES(satker),
+                 kd_satker = VALUES(kd_satker),
                  jabatan = VALUES(jabatan),
                  email = VALUES(email),
                  last_login = CURRENT_TIMESTAMP`,
                 [
                     sessionData.nipp,
+                    sessionData.nip_lama || null,
                     sessionData.nama,
                     sessionData.foto_url,
                     sessionData.satker,
+                    sessionData.kd_satker || null,
                     sessionData.jabatan || null,
                     sessionData.email || null
                 ]
             );
+            // Fetch the ACTUAL role from our DB (since BPS API doesn't have it)
+            const [userRows]: any = await pool.query(
+                "SELECT role FROM users WHERE nipp = ?",
+                [sessionData.nipp]
+            );
+
+            if (userRows.length > 0) {
+                sessionData.role = userRows[0].role || 'user';
+            } else {
+                sessionData.role = 'user';
+            }
         } catch (dbError) {
             console.error("Database User Sync Error:", dbError);
-            // We continue even if DB fails, so login isn't blocked by DB issues
+            sessionData.role = 'user'; // Fallback
         }
         // -------------------------
 
-        // Success - Create a session cookie (simple version)
+        // Success - Create a session cookie (SIMPLE JSON FORMAT)
         const res = NextResponse.json({
             success: true,
             user: sessionData,
             message: "Login successful"
         });
 
-        // Set a basic cookie for persistence (session-only)
+        // Set a basic cookie for persistence
         res.cookies.set("auth_session", JSON.stringify(sessionData), {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: process.env.NODE_ENV === "production", // Pakai true HANYA di hosting (Production)
             sameSite: "lax",
+            path: "/alihaudio",
             maxAge: 60 * 60 * 24, // 24 hours
         });
 

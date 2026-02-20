@@ -4,9 +4,24 @@ import { cookies } from "next/headers";
 import fs from "fs/promises";
 import path from "path";
 
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: "50mb",
+        },
+    },
+};
+
 export async function POST(req: Request) {
     try {
-        const { text, mode, lang, provider, audioData } = await req.json();
+        // Gunakan formData() agar bisa bypass limit JSON di server
+        const formData = await req.formData();
+        const text = formData.get("text") as string;
+        const judul = formData.get("judul") as string;
+        const mode = formData.get("mode") as string;
+        const lang = formData.get("lang") as string;
+        const provider = formData.get("provider") as string;
+        const audioFile = formData.get("audio") as File | null;
 
         // Get user from session cookie
         const cookieStore = await cookies();
@@ -20,12 +35,12 @@ export async function POST(req: Request) {
         const user_nipp = user.nipp || user.username || user.nip;
 
         if (!user_nipp) {
-            return NextResponse.json({ error: "Invalid user session" }, { status: 401 });
+            return NextResponse.json({ error: "Invalid user session: NIPP missing" }, { status: 401 });
         }
 
         // --- SAVE MP3 FILE ---
         let audioPath = null;
-        if (audioData) {
+        if (audioFile) {
             const fileName = `voice-${user_nipp}-${Date.now()}.mp3`;
             const uploadDir = path.join(process.cwd(), "public", "uploads", "audio");
             const filePath = path.join(uploadDir, fileName);
@@ -33,18 +48,18 @@ export async function POST(req: Request) {
             // Ensure directory exists
             await fs.mkdir(uploadDir, { recursive: true });
 
-            // Remove base64 prefix if exists (e.g., data:audio/mpeg;base64,)
-            const base64Data = audioData.replace(/^data:audio\/\w+;base64,/, "");
-            await fs.writeFile(filePath, Buffer.from(base64Data, "base64"));
+            // Simpan langsung dari buffer file (lebih hemat memori)
+            const buffer = Buffer.from(await audioFile.arrayBuffer());
+            await fs.writeFile(filePath, buffer);
 
             audioPath = `/uploads/audio/${fileName}`;
         }
 
-        // Save to database
+        // Save to database (termasuk kolom judul)
         await pool.query(
-            `INSERT INTO conversions (user_nipp, text_input, mode, lang, provider, audio_path) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [user_nipp, text, mode, lang, provider, audioPath]
+            `INSERT INTO conversions (user_nipp, judul, text_input, mode, lang, provider, audio_path) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [user_nipp, judul || null, text, mode, lang, provider, audioPath]
         );
 
         return NextResponse.json({
@@ -55,7 +70,7 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error("Save Conversion Error:", error);
         return NextResponse.json(
-            { error: "Internal server error while saving conversion" },
+            { error: "Internal server error: " + error.message },
             { status: 500 }
         );
     }

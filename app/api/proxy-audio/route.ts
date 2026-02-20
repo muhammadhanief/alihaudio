@@ -8,40 +8,56 @@ export async function POST(req: NextRequest) {
         const { text, lang } = await req.json();
 
         // 1. Request pembuatan suara ke SoundOfText
-        const createRes = await fetch("https://api.soundoftext.com/sounds", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                engine: "google",
-                data: { text, voice: lang }
-            })
-        });
+        let createRes;
+        try {
+            createRes = await fetch("https://api.soundoftext.com/sounds", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    engine: "google",
+                    data: { text, voice: lang }
+                }),
+                signal: AbortSignal.timeout(5000) // Batasi 5 detik
+            });
+        } catch (fetchErr: any) {
+            console.error("FIREWALL DETECTED (CREATE):", fetchErr.message);
+            return NextResponse.json({
+                error: "FIREWALL SERVER: Server cPanel BPS menutup akses ke SoundOfText. Harap gunakan Mode Laki-laki atau Upload Manual.",
+                details: fetchErr.message
+            }, { status: 503 }); // 503 Service Unavailable
+        }
 
-        if (!createRes.ok) throw new Error("Gagal menghubungi server suara.");
+        if (!createRes.ok) {
+            const errText = await createRes.text();
+            return NextResponse.json({ error: `Server Suara Menolak: ${errText}` }, { status: createRes.status });
+        }
+
         const { id } = await createRes.json();
 
-        // 2. Polling status sampai selesai (maksimal 5 detik)
+        // 2. Polling status sampai selesai
         let attempts = 0;
         let location = "";
 
         while (attempts < 5) {
             await new Promise(r => setTimeout(r, 1000));
-            const checkRes = await fetch(`https://api.soundoftext.com/sounds/${id}`);
-            const data = await checkRes.json();
-
-            if (data.status === "Done") {
-                location = data.location;
-                break;
+            try {
+                const checkRes = await fetch(`https://api.soundoftext.com/sounds/${id}`, { signal: AbortSignal.timeout(3000) });
+                const data = await checkRes.json();
+                if (data.status === "Done") {
+                    location = data.location;
+                    break;
+                }
+            } catch (pollErr: any) {
+                console.warn("Polling interrupted by firewall/network:", pollErr.message);
             }
             attempts++;
         }
 
-        if (!location) throw new Error("Server suara terlalu lambat.");
+        if (!location) throw new Error("Server suara terlalu lambat atau koneksi terputus.");
 
         return NextResponse.json({ success: true, audioUrl: location });
 
     } catch (error: any) {
-        console.error("Backend Proxy TTS Error:", error.message);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

@@ -9,7 +9,7 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(getApiUrl("/api/dashboard/stats"))
+        fetch(getApiUrl(`/api/dashboard/stats?_t=${Date.now()}`), { cache: "no-store" })
             .then(res => res.json())
             .then(data => {
                 setStats(data.stats);
@@ -17,7 +17,11 @@ export default function DashboardPage() {
             });
     }, []);
 
-    if (loading) return null;
+    if (loading || !stats) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        </div>
+    );
 
     return (
         <div className="space-y-6 animate-fade-in">

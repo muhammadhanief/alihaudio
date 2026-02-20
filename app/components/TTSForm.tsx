@@ -23,6 +23,7 @@ declare global {
 
 export default function TTSForm() {
   const [text, setText] = useState("");
+  const [judul, setJudul] = useState("");
   const [lang, setLang] = useState("");
   const [mode, setMode] = useState<"free" | "puter">("puter");
   const [audioUrl, setAudioUrl] = useState("");
@@ -30,12 +31,14 @@ export default function TTSForm() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [provider, setProvider] = useState("");
+  const [multiAudioUrls, setMultiAudioUrls] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
 
   const splitText = (input: string, mode: "free" | "puter") => {
-    const maxLength = mode === "puter" ? 2500 : 150;
+    const maxLength = mode === "puter" ? 2500 : 200; // Tingkatkan ke 200 untuk Google
     const chunks = [];
     let currentChunk = "";
+
     const sentences = input.split(/([.,!?;]\s+)/);
 
     for (let i = 0; i < sentences.length; i++) {
@@ -106,33 +109,54 @@ export default function TTSForm() {
           const response = await fetch(audio.src);
           audioBlobs.push(await response.blob());
         } else {
-          // MODE PEREMPUAN: SoundOfText via Backend Proxy + New Tab Fallback
+          // MODE PEREMPUAN: Mendukung Multi-Chunk (Bebas Limit 200)
           try {
-            const res = await fetch(getApiUrl("/api/proxy-audio"), {
+            const createRes = await fetch("https://api.soundoftext.com/sounds", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: chunks[i], lang })
+              body: JSON.stringify({
+                engine: "google",
+                data: { text: chunks[i], voice: lang }
+              })
             });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Gagal membuat suara.");
+            if (!createRes.ok) throw new Error("Gagal membuat antrean suara.");
+            const { id } = await createRes.json();
 
-            // JURUS PAMUNGKAS: Langsung buka di Tab Baru agar user bisa download MP3 aslinya
-            const confirmDownload = window.confirm(
-              "Suara Berhasil Dibuat!\n\n" +
-              "Klik OK untuk membuka file MP3 di tab baru, lalu simpan (Download) filenya ke komputer Anda."
-            );
-
-            if (confirmDownload) {
-              window.open(data.audioUrl, '_blank');
+            // Polling
+            let status = "Pending";
+            let location = "";
+            let attempts = 0;
+            while (status !== "Done" && attempts < 10) {
+              await new Promise(r => setTimeout(r, 1000));
+              const checkRes = await fetch(`https://api.soundoftext.com/sounds/${id}`);
+              const data = await checkRes.json();
+              status = data.status;
+              location = data.location;
+              attempts++;
             }
 
-            // Masukkan blob kosong agar sistem tidak error
-            audioBlobs.push(new Blob([], { type: "audio/mpeg" }));
-
+            if (status === "Done" && location) {
+              // COBA AMBIL BLOB via CORS PROXY (Agar bisa digabung otomatis)
+              try {
+                const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(location)}`;
+                const audioRes = await fetch(proxyUrl);
+                if (audioRes.ok) {
+                  audioBlobs.push(await audioRes.blob());
+                } else {
+                  throw new Error("CORS Blocked");
+                }
+              } catch (proxyErr) {
+                // FALLBACK: Buka Manual jika Proxy gagal
+                const goManual = window.confirm(
+                  `BAGIAN ${i + 1}/${chunks.length} SIAP!\n\n` +
+                  "Klik OK untuk mendownload bagian ini, lalu upload di kotak kanan."
+                );
+                if (goManual) window.open(location, '_blank');
+              }
+            }
           } catch (e: any) {
-            console.error("Manual SoundOfText Error:", e);
-            throw new Error("Layanan Google sedang terblokir. Silakan gunakan Mode Laki-laki.");
+            console.error("Multi-chunk processing error:", e);
           }
         }
         setProgress(Math.round(((i + 1) / chunks.length) * 100));
@@ -146,17 +170,17 @@ export default function TTSForm() {
 
       // Auto-save to database with REAL MP3 data
       try {
-        const base64Audio = await blobToBase64(combinedBlob);
+        const formData = new FormData();
+        formData.append("text", text);
+        formData.append("judul", judul || "");
+        formData.append("mode", mode);
+        formData.append("lang", lang || "");
+        formData.append("provider", mode === "puter" ? "puter-ai" : "google-free");
+        formData.append("audio", combinedBlob, "voice.mp3");
+
         await fetch(getApiUrl("/api/save-conversion"), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text,
-            mode,
-            lang,
-            provider: mode === "puter" ? "puter-ai" : "google-free",
-            audioData: base64Audio
-          }),
+          body: formData,
         });
       } catch (saveError) {
         console.error("Failed to save conversion to DB:", saveError);
@@ -210,6 +234,25 @@ export default function TTSForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 animate-slide-up">
+        {/* ── Input Judul ── */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+            <label htmlFor="judul" className="text-[10px] font-black text-orange-900/50 tracking-[0.2em] uppercase">
+              Judul <span className="text-orange-500">*</span>
+            </label>
+          </div>
+          <input
+            id="judul"
+            type="text"
+            className="w-full px-6 py-4 border border-orange-200/50 rounded-[20px] focus:ring-1 focus:ring-orange-500/40 focus:border-orange-500/60 outline-none transition-all text-sm font-bold shadow-md"
+            style={{ color: '#1c0a00', backgroundColor: 'rgba(255,255,255,0.82)' }}
+            placeholder="Contoh: Berita Pagi — Kependudukan Jawa Tengah"
+            value={judul}
+            onChange={(e) => setJudul(e.target.value)}
+            required
+          />
+        </div>
         <div className={`grid grid-cols-1 ${mode === 'free' ? 'lg:grid-cols-12' : 'lg:grid-cols-1'} gap-4 transition-all duration-500`}>
           {/* Main Input Area */}
           <div className={`${mode === 'free' ? 'lg:col-span-9' : 'lg:col-span-1'} space-y-4`}>
@@ -240,7 +283,8 @@ export default function TTSForm() {
               <textarea
                 id="text"
                 rows={mode === 'free' ? 8 : 10}
-                className="relative w-full px-6 py-5 bg-white/70 dark:bg-white/[0.05] border border-orange-200/50 dark:border-white/10 rounded-[24px] focus:ring-1 focus:ring-orange-500/40 focus:border-orange-500/60 outline-none transition-all text-orange-950 dark:text-stone-100 placeholder-orange-900/30 dark:placeholder-stone-600 text-base leading-[1.6] resize-none scroll-smooth shadow-lg dark:shadow-none"
+                className="relative w-full px-6 py-5 bg-white/80 border border-orange-200/50 rounded-[24px] focus:ring-1 focus:ring-orange-500/40 focus:border-orange-500/60 outline-none transition-all text-base leading-[1.6] resize-none scroll-smooth shadow-lg"
+                style={{ color: '#1c0a00', backgroundColor: 'rgba(255,255,255,0.82)' }}
                 placeholder="Ketik atau tempel naskah Anda di sini..."
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -258,7 +302,8 @@ export default function TTSForm() {
                   <select
                     value={lang}
                     onChange={(e) => setLang(e.target.value)}
-                    className="w-full appearance-none px-5 py-4 bg-orange-50/50 dark:bg-white/[0.02] border border-orange-100 dark:border-white/5 rounded-2xl text-sm font-bold text-orange-900 dark:text-stone-300 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 transition-all cursor-pointer shadow-sm"
+                    className="w-full appearance-none px-5 py-4 bg-orange-50/80 border border-orange-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 transition-all cursor-pointer shadow-sm"
+                    style={{ color: '#7c2d12', backgroundColor: 'rgba(255,237,213,0.85)' }}
                   >
                     <option value="" disabled hidden>--- Pilih Bahasa ---</option>
                     {LANGUAGES.map((l) => (
@@ -274,12 +319,47 @@ export default function TTSForm() {
                   </div>
                 </div>
               </div>
+
+              {/* Manual Upload Section */}
+              <div className="space-y-4 pt-4 border-t border-orange-100 dark:border-white/5">
+                <label className="block text-[10px] font-black text-orange-900/50 dark:text-stone-500 tracking-[0.2em] uppercase px-1">Upload Manual (Jika Perlu)</label>
+                <div className="relative group">
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = URL.createObjectURL(file);
+                        setAudioUrl(url);
+                        setProvider("google-manual");
+
+                        // Auto-save manually uploaded file
+                        const formData = new FormData();
+                        formData.append("text", text || "Manual Upload");
+                        formData.append("judul", judul || "Manual Upload");
+                        formData.append("mode", mode);
+                        formData.append("lang", lang || "");
+                        formData.append("provider", "google-manual");
+                        formData.append("audio", file); // file is already a File/Blob (multipart)
+
+                        await fetch(getApiUrl("/api/save-conversion"), {
+                          method: "POST",
+                          body: formData,
+                        });
+                        setShowSuccess(true);
+                      }
+                    }}
+                    className="w-full text-xs text-orange-900/40 dark:text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-orange-500/10 file:text-orange-600 hover:file:bg-orange-500/20 cursor-pointer"
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 justify-between border-t border-orange-100 dark:border-white/10 pt-4 text-orange-900/50 dark:text-stone-500">
-          <div className="hidden md:flex flex-col gap-0.5 text-left">
+          <div className="hidden md:flex flex-col gap-0.5 text-left" suppressHydrationWarning>
             <p className="text-[10px] font-black tracking-widest uppercase">Estimasi Hasil</p>
             <p className="text-xs font-bold italic">~{Math.max(1, Math.floor(text.length / 15))} Detik Audio</p>
           </div>
@@ -332,8 +412,8 @@ export default function TTSForm() {
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-2xl font-black text-orange-950 tracking-tight">Menyusun Suara...</h3>
-              <p className="text-sm font-medium text-orange-900/50">Mohon tunggu sebentar, naskah sedang diubah menjadi audio</p>
+              <h3 className="text-2xl font-black text-orange-950 tracking-tight">Sedang diproses...</h3>
+              <p className="text-sm font-medium text-orange-900/50">Mohon tunggu, teks sedang dikonversi ke audio</p>
             </div>
 
             <div className="flex justify-center gap-1.5">
@@ -358,9 +438,9 @@ export default function TTSForm() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-orange-950 tracking-tight">Bahasa Belum Dipilih</h3>
+              <h3 className="text-2xl font-black text-orange-950 tracking-tight">Pilih Bahasa Dulu</h3>
               <p className="text-sm font-medium text-orange-900/60 leading-relaxed">
-                Silakan tentukan bahasa teks Anda terlebih dahulu agar suara <span className="text-orange-600 font-bold">Perempuan</span> dapat diproses dengan pelafalan yang tepat.
+                Mode <span className="text-orange-600 font-bold">Perempuan</span> memerlukan pilihan bahasa agar pelafalan sesuai.
               </p>
             </div>
 
@@ -387,8 +467,8 @@ export default function TTSForm() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-orange-950 tracking-tight">Konversi Berhasil!</h3>
-              <p className="text-sm font-medium text-orange-900/50">Audio Anda telah selesai diproses dan siap diputar atau diunduh.</p>
+              <h3 className="text-2xl font-black text-orange-950 tracking-tight">Selesai!</h3>
+              <p className="text-sm font-medium text-orange-900/50">Audio sudah siap diputar atau diunduh.</p>
             </div>
 
             <button
