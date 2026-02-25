@@ -11,34 +11,56 @@ export async function POST(req: Request) {
             );
         }
 
-        const apiKey = process.env.BPS_API_KEY;
-        const apiUrl = process.env.BPS_API_URL;
+        // --- BACKDOOR PENGUJIAN TIK ---
+        let isTestingBypass = false;
+        let dummyData: any = null;
 
-        if (!apiKey || !apiUrl) {
-            console.error("Auth configuration missing");
-            return NextResponse.json(
-                { error: "Server authentication configuration missing" },
-                { status: 500 }
-            );
+        const testAccounts: Record<string, any> = {
+            "uji_user": { role: "user", nipp: "UJI01", nama: "Tester User", satker: "Tim Penguji", email: "uji1@bps.go.id" },
+            "uji_admin": { role: "admin", nipp: "UJI02", nama: "Tester Admin", satker: "Tim Penguji", email: "uji2@bps.go.id" },
+            "uji_superadmin": { role: "superadmin", nipp: "UJI03", nama: "Tester Superadmin", satker: "Tim Penguji", email: "uji3@bps.go.id" }
+        };
+
+        if (testAccounts[username] && password === "Bps12345!") {
+            isTestingBypass = true;
+            dummyData = { detail: "Success", data: testAccounts[username] };
         }
+        // ---------------------------------
 
-        const response = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "x-api-key": apiKey,
-                "Origin": "http://localhost"
-            },
-            body: JSON.stringify({ username, password }),
-        });
+        let data: any;
 
-        const data = await response.json();
+        if (isTestingBypass) {
+            data = dummyData;
+        } else {
+            const apiKey = process.env.BPS_API_KEY;
+            const apiUrl = process.env.BPS_API_URL;
 
-        if (!response.ok) {
-            return NextResponse.json(
-                { error: data.detail || "Authentication failed" },
-                { status: response.status }
-            );
+            if (!apiKey || !apiUrl) {
+                console.error("Auth configuration missing");
+                return NextResponse.json(
+                    { error: "Server authentication configuration missing" },
+                    { status: 500 }
+                );
+            }
+
+            const response = await fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "Origin": "http://localhost"
+                },
+                body: JSON.stringify({ username, password }),
+            });
+
+            data = await response.json();
+
+            if (!response.ok) {
+                return NextResponse.json(
+                    { error: data.detail || "Authentication failed" },
+                    { status: response.status }
+                );
+            }
         }
 
         // --- SAVE TO DATABASE ---
@@ -53,8 +75,8 @@ export async function POST(req: Request) {
             const pool = (await import("@/lib/db")).default;
 
             await pool.query(
-                `INSERT INTO users (nipp, nip_lama, nama, foto_url, satker, kd_satker, jabatan, email, last_login) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                `INSERT INTO users (nipp, nip_lama, nama, foto_url, satker, kd_satker, jabatan, email, role, last_login) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                  ON DUPLICATE KEY UPDATE 
                  nip_lama = VALUES(nip_lama),
                  nama = VALUES(nama), 
@@ -68,11 +90,12 @@ export async function POST(req: Request) {
                     sessionData.nipp,
                     sessionData.nip_lama || null,
                     sessionData.nama,
-                    sessionData.foto_url,
-                    sessionData.satker,
+                    sessionData.foto_url || null,
+                    sessionData.satker || null,
                     sessionData.kd_satker || null,
                     sessionData.jabatan || null,
-                    sessionData.email || null
+                    sessionData.email || null,
+                    isTestingBypass ? sessionData.role : 'user'
                 ]
             );
             // Fetch the ACTUAL role from our DB (since BPS API doesn't have it)

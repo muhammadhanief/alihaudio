@@ -42,7 +42,7 @@ export async function GET() {
         }
 
         const [conversions]: any = await pool.query(`
-            SELECT c.*, u.nama as user_nama, u.satker as user_satker 
+            SELECT c.*, u.nama as user_nama, u.satker as user_satker, u.foto_url as user_foto_url
             FROM conversions c
             LEFT JOIN users u ON c.user_nipp = u.nipp
             ORDER BY c.created_at DESC

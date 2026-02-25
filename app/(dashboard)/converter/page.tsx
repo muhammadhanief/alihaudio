@@ -7,8 +7,8 @@ export default function ConverterPage() {
         <div className="space-y-6 animate-fade-in">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-black text-orange-950 tracking-tighter uppercase">Alih Audio</h1>
-                <p className="text-orange-900/50 text-xs font-bold uppercase tracking-widest mt-1">Konversi teks menjadi audio</p>
+                <h1 className="text-4xl font-bold text-orange-950 tracking-tighter uppercase">Alih Audio</h1>
+                <p className="text-orange-900/50 text-xs font-medium uppercase tracking-widest mt-1">Konversi teks menjadi audio</p>
             </div>
 
             {/* Main Form Area */}
@@ -18,7 +18,7 @@ export default function ConverterPage() {
             </main>
 
             <footer className="text-center py-4 opacity-40">
-                <p className="text-[8px] font-black tracking-widest text-zinc-400 uppercase">
+                <p className="text-[8px] font-semibold tracking-widest text-zinc-400 uppercase">
                     Platform Konversi Audio Internal BPS
                 </p>
             </footer>

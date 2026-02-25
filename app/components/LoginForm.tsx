@@ -42,8 +42,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     return (
         <div className="w-full max-w-md mx-auto space-y-8 animate-slide-up">
             <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black tracking-tight text-orange-950 dark:text-white">Selamat Datang</h2>
-                <p className="text-orange-900/50 dark:text-zinc-400 font-medium">Silakan login dengan akun SSO BPS</p>
+                <h2 className="text-3xl font-bold tracking-tight text-orange-950 ">Selamat Datang</h2>
+                <p className="text-orange-900/50  font-medium">Silakan login dengan akun SSO BPS</p>
             </div>
 
             <div className="glass rounded-[40px] p-8 md:p-10 shadow-2xl relative overflow-hidden group">
@@ -52,14 +52,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
                     <div className="space-y-4">
                         <div className="space-y-2 px-1">
-                            <label className="text-[10px] font-black text-orange-900/50 dark:text-zinc-400 tracking-[0.2em] uppercase">Username</label>
+                            <label className="text-[10px] font-semibold text-orange-900/50  tracking-[0.2em] uppercase">Username (tanpa @bps.go.id)</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     placeholder="username.pegawai"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full px-6 py-4 border border-orange-100 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all font-bold"
+                                    className="w-full px-6 py-4 border border-orange-100 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all font-medium"
                                     style={{ color: '#1c0a00', backgroundColor: 'rgba(255,247,237,0.85)' }}
                                     required
                                 />
@@ -67,13 +67,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                         </div>
 
                         <div className="space-y-2 px-1">
-                            <label className="text-[10px] font-black text-orange-900/50 dark:text-zinc-400 tracking-[0.2em] uppercase">Password</label>
+                            <label className="text-[10px] font-semibold text-orange-900/50  tracking-[0.2em] uppercase">Password</label>
                             <input
                                 type="password"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-6 py-4 border border-orange-100 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all font-bold"
+                                className="w-full px-6 py-4 border border-orange-100 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/40 outline-none transition-all font-medium"
                                 style={{ color: '#1c0a00', backgroundColor: 'rgba(255,247,237,0.85)' }}
                                 required
                             />
@@ -81,7 +81,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                     </div>
 
                     {error && (
-                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-bold text-red-500 animate-in text-center">
+                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-medium text-red-500 animate-in text-center">
                             {error}
                         </div>
                     )}
@@ -89,7 +89,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="group relative overflow-hidden w-full py-5 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black shadow-xl shadow-orange-600/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                        className="group relative overflow-hidden w-full py-5 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-semibold shadow-xl shadow-orange-600/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                     >
                         <span className="relative z-10 flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
                             {isLoading ? (
@@ -98,7 +98,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                                     MENGOTENTIKASI...
                                 </>
                             ) : (
-                                <>Masuk Sekarang <span className="text-lg opacity-50">→</span></>
+                                <>login <span className="text-lg opacity-50">→</span></>
                             )}
                         </span>
                         <div className="absolute inset-x-0 bottom-0 h-1 bg-black/20 group-hover:h-full transition-all duration-300"></div>
@@ -106,9 +106,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 </form>
             </div>
 
-            <p className="text-center text-[10px] text-orange-900/40 dark:text-orange-950/60 font-black tracking-widest uppercase">
+            {/* <p className="text-center text-[10px] text-orange-900/40 text-orange-950/60 font-medium tracking-widest uppercase">
                 KHUSUS INTERNAL PEGAWAI BPS
-            </p>
+            </p> */}
         </div>
     );
 }

@@ -68,14 +68,27 @@ export async function POST(req: Request) {
         })();
 
         const currentUserNipp = user.nipp || user.username || user.nip;
-        const [rows]: any = await pool.query("SELECT role FROM users WHERE nipp = ?", [currentUserNipp]);
+        const [currentUserRows]: any = await pool.query("SELECT role FROM users WHERE nipp = ?", [currentUserNipp]);
 
-        if (rows.length === 0 || rows[0].role !== 'superadmin') {
+        if (currentUserRows.length === 0 || currentUserRows[0].role !== 'superadmin') {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
+        const [targetUserRows]: any = await pool.query("SELECT role FROM users WHERE nipp = ?", [targetNipp]);
+        if (targetUserRows.length === 0) {
+            return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
+        }
+
+        const currentUserRole = currentUserRows[0].role;
+        const targetUserRole = targetUserRows[0].role;
+
+        // Validasi tidak bisa saling mengintervensi scope role yang sama (kecuali dirinya sendiri yang mana di-handle di pengecekan selanjutnya)
+        if (targetNipp !== currentUserNipp && targetUserRole === currentUserRole) {
+            return NextResponse.json({ error: "Anda tidak diberikan hak untuk mengubah peran pengguna yang memiliki tingkatan role setara." }, { status: 403 });
+        }
+
         if (targetNipp === currentUserNipp && newRole !== 'superadmin') {
-            return NextResponse.json({ error: "Cannot demote yourself" }, { status: 400 });
+            return NextResponse.json({ error: "Tidak dapat menurunkan hak akses (demote) akun Anda sendiri" }, { status: 400 });
         }
 
         await pool.query("UPDATE users SET role = ? WHERE nipp = ?", [newRole, targetNipp]);

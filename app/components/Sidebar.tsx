@@ -9,7 +9,9 @@ import {
     Users,
     LogOut,
     Menu,
-    X
+    X,
+    UploadCloud,
+    Settings
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getApiUrl } from "@/lib/utils";
@@ -36,6 +38,10 @@ export default function Sidebar({ user }: SidebarProps) {
 
     const handleLogout = async () => {
         setIsOpen(false);
+        if (user?.role === 'guest') {
+            router.push("/");
+            return;
+        }
         await fetch(getApiUrl("/api/auth/logout"), { method: "POST" });
         router.push("/");
     };
@@ -45,11 +51,19 @@ export default function Sidebar({ user }: SidebarProps) {
         router.push(path);
     };
 
-    const menuItems = [
-        { name: "Beranda", icon: LayoutDashboard, path: "/dashboard" },
-        { name: "Alih Audio", icon: Mic2, path: "/converter" },
-        { name: "Alih Audio Saya", icon: History, path: "/my-conversions" },
-    ];
+    const isGuest = user?.role === 'guest';
+
+    const menuItems = isGuest
+        ? [
+            { name: "Alih Audio", icon: Mic2, path: "/guest/converter" },
+            { name: "Alih Audio Saya", icon: History, path: "/guest/my-conversions" },
+        ]
+        : [
+            { name: "Beranda", icon: LayoutDashboard, path: "/dashboard" },
+            { name: "Alih Audio", icon: Mic2, path: "/converter" },
+            { name: "Upload Manual", icon: UploadCloud, path: "/upload-audio" },
+            { name: "Alih Audio Saya", icon: History, path: "/my-conversions" },
+        ];
 
     const adminItems = [
         { name: "Alih Audio Total", icon: Globe, path: "/admin/total" },
@@ -57,6 +71,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
     const superAdminItems = [
         { name: "Manajemen User", icon: Users, path: "/admin/users" },
+        { name: "Pengaturan", icon: Settings, path: "/admin/settings" },
     ];
 
     const NavButton = ({ item }: { item: { name: string; icon: any; path: string } }) => {
@@ -70,19 +85,19 @@ export default function Sidebar({ user }: SidebarProps) {
                     }`}
             >
                 <item.icon className={`h-5 w-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
-                <span className="text-sm font-black tracking-tight">{item.name}</span>
+                <span className="text-sm font-semibold tracking-tight">{item.name}</span>
             </button>
         );
     };
 
     const SidebarContent = () => (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
             {/* Logo */}
             <div className="px-5 py-5 flex items-center gap-3 border-b border-orange-100">
                 <div className="p-2 rounded-xl bg-orange-600 shadow-lg shadow-orange-600/20 flex-shrink-0">
                     <Mic2 className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-black tracking-tighter text-zinc-900 uppercase">Alih Audio</span>
+                <span className="text-xl font-bold tracking-tight text-zinc-900 uppercase">Alih Audio</span>
             </div>
 
             {/* User Profile */}
@@ -95,21 +110,21 @@ export default function Sidebar({ user }: SidebarProps) {
                             className="w-10 h-10 rounded-xl object-cover border border-orange-100 shadow-sm flex-shrink-0"
                         />
                     ) : (
-                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-black text-lg flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-lg flex-shrink-0">
                             {user?.nama?.charAt(0)}
                         </div>
                     )}
                     <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-black text-zinc-900 leading-tight break-words whitespace-normal">{user?.nama}</span>
-                        <span className="text-[11px] font-bold text-orange-600/70 uppercase tracking-tight mt-0.5">{user?.role}</span>
+                        <span className="text-sm font-bold text-zinc-900 leading-tight break-words whitespace-normal">{user?.nama}</span>
+                        <span className="text-[11px] font-medium text-orange-600/70 uppercase tracking-tight mt-0.5">{user?.role}</span>
                     </div>
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5 min-h-0">
                 <div className="space-y-1">
-                    <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Main Menu</label>
+                    <label className="px-3 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Main Menu</label>
                     <div className="space-y-1 mt-1">
                         {menuItems.map((item) => <NavButton key={item.path} item={item} />)}
                     </div>
@@ -117,7 +132,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
                 {isAdmin && (
                     <div className="space-y-1">
-                        <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Admin Tools</label>
+                        <label className="px-3 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Admin Tools</label>
                         <div className="space-y-1 mt-1">
                             {adminItems.map((item) => <NavButton key={item.path} item={item} />)}
                         </div>
@@ -126,7 +141,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
                 {isSuperAdmin && (
                     <div className="space-y-1">
-                        <label className="px-3 text-[10px] font-black text-zinc-400 uppercase tracking-widest">System</label>
+                        <label className="px-3 text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">System</label>
                         <div className="space-y-1 mt-1">
                             {superAdminItems.map((item) => <NavButton key={item.path} item={item} />)}
                         </div>
@@ -141,7 +156,7 @@ export default function Sidebar({ user }: SidebarProps) {
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all group"
                 >
                     <LogOut className="h-5 w-5 group-hover:scale-110 transition-transform flex-shrink-0" />
-                    <span className="text-sm font-black tracking-tight uppercase">Keluar</span>
+                    <span className="text-sm font-semibold tracking-tight ">{isGuest ? 'Keluar Mode Tamu' : 'Logout'}</span>
                 </button>
             </div>
         </div>
@@ -150,7 +165,7 @@ export default function Sidebar({ user }: SidebarProps) {
     return (
         <>
             {/* ─── DESKTOP: Sidebar Permanen ─── */}
-            <aside className="hidden md:flex fixed left-0 top-0 h-screen w-60 bg-white border-r border-orange-100 flex-col z-[100] shadow-xl">
+            <aside className="hidden md:flex fixed left-0 top-0 h-[100dvh] w-60 bg-white border-r border-orange-100 flex-col z-[100] shadow-xl">
                 <SidebarContent />
             </aside>
 
@@ -173,7 +188,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
             {/* ─── MOBILE: Slide-in Sidebar ─── */}
             <aside
-                className={`md:hidden fixed left-0 top-0 h-screen w-72 bg-white z-[200] shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`md:hidden fixed left-0 top-0 h-[100dvh] w-72 bg-white z-[200] shadow-2xl transform transition-transform duration-200 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
                 {/* Tombol tutup */}

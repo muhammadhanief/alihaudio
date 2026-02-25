@@ -23,19 +23,34 @@ export async function POST(req: Request) {
         const provider = formData.get("provider") as string;
         const audioFile = formData.get("audio") as File | null;
 
-        // Get user from session cookie
         const cookieStore = await cookies();
         const session = cookieStore.get("auth_session");
+        const isGuest = formData.get("isGuest") === "true";
 
-        if (!session) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        let user_nipp = "GUEST";
 
-        const user = JSON.parse(session.value);
-        const user_nipp = user.nipp || user.username || user.nip;
+        if (isGuest) {
+            // Pastikan akun GUEST ada di tabel users agar lolos pengecekan Foreign Key MySQL
+            try {
+                await pool.query(
+                    `INSERT INTO users (nipp, nama, role) 
+                     VALUES ('GUEST', 'Tamu', 'user')
+                     ON DUPLICATE KEY UPDATE last_login = CURRENT_TIMESTAMP`
+                );
+            } catch (dbErr) {
+                console.error("Gagal inisialisasi user GUEST:", dbErr);
+            }
+        } else {
+            if (!session) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
 
-        if (!user_nipp) {
-            return NextResponse.json({ error: "Invalid user session: NIPP missing" }, { status: 401 });
+            const user = JSON.parse(session.value);
+            user_nipp = user.nipp || user.username || user.nip;
+
+            if (!user_nipp) {
+                return NextResponse.json({ error: "Invalid user session: NIPP missing" }, { status: 401 });
+            }
         }
 
         // --- SAVE MP3 FILE ---

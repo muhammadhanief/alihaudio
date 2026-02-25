@@ -43,7 +43,7 @@ export default function DashboardLayout({
             {/* Main Content Area */}
             {/* Mobile: full width (sidebar adalah overlay) */}
             {/* Desktop: geser kanan sesuai lebar sidebar (w-60 = 15rem) */}
-            <main className="flex-1 w-full md:pl-60 transition-all duration-500 overflow-x-hidden">
+            <main className="flex-1 w-full md:pl-60 transition-all duration-200 overflow-x-hidden">
                 <div className="max-w-7xl mx-auto p-4 pt-16 md:pt-6 md:p-6">
                     {children}
                 </div>
