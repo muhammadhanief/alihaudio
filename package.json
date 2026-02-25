@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "zip-cpanel": "npm run build && powershell -Command \"Compress-Archive -Path .next, package.json, server.js, next.config.js -DestinationPath deploy-jatengbps.zip -Force\""
   },
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.4.0",
