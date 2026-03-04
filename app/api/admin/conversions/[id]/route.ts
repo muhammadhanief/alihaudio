@@ -76,6 +76,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
         return NextResponse.json({ success: true, message: "Conversion deleted successfully" });
     } catch (error: any) {
         console.error("Delete Conversion Error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 }

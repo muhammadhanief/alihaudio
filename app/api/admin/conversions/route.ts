@@ -58,6 +58,6 @@ export async function GET() {
         return response;
     } catch (error: any) {
         console.error("Fetch All Conversions Error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 }

@@ -2,11 +2,37 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
     try {
-        const { username, password } = await req.json();
+        // 🛡️ SECURITY: Validasi Body Request (Cegah crash 500)
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+        }
 
+        const { username, password } = body;
+
+        // 🛡️ SECURITY: Input Validation (Allow List Strategy)
+        // Username BPS biasanya NIP (angka) atau alphanumeric. Kita batasi karakter khusus.
+        const usernameRegex = /^[a-zA-Z0-9._-]+$/;
         if (!username || !password) {
             return NextResponse.json(
                 { error: "Username and password are required" },
+                { status: 400 }
+            );
+        }
+
+        if (!usernameRegex.test(username)) {
+            return NextResponse.json(
+                { error: "Username contains invalid characters" },
+                { status: 400 }
+            );
+        }
+
+        // Batasi panjang input untuk mencegah DoS/Buffer Overflow attempts
+        if (username.length > 50 || password.length > 100) {
+            return NextResponse.json(
+                { error: "Input too long" },
                 { status: 400 }
             );
         }
@@ -36,10 +62,11 @@ export async function POST(req: Request) {
             const apiUrl = process.env.BPS_API_URL;
 
             if (!apiKey || !apiUrl) {
-                console.error("Auth configuration missing");
+                // 🛡️ SECURITY: Jangan ungkap detail konfigurasi ke client
+                console.error("[AUTH ERROR] BPS API configuration missing in environment variables");
                 return NextResponse.json(
-                    { error: "Server authentication configuration missing" },
-                    { status: 500 }
+                    { error: "Authentication service unavailable. Please try again later." },
+                    { status: 503 }
                 );
             }
 
@@ -56,9 +83,11 @@ export async function POST(req: Request) {
             data = await response.json();
 
             if (!response.ok) {
+                // 🛡️ SECURITY: Kembalikan pesan generik, log detail di server
+                console.error(`[AUTH ERROR] BPS API responded with ${response.status}:`, data);
                 return NextResponse.json(
-                    { error: data.detail || "Authentication failed" },
-                    { status: response.status }
+                    { error: "Invalid username or password." },
+                    { status: 401 }
                 );
             }
         }
@@ -133,9 +162,10 @@ export async function POST(req: Request) {
 
         return res;
     } catch (error: any) {
-        console.error("Login Error:", error);
+        // 🛡️ SECURITY: Log detail error di server, tapi jangan expose ke client
+        console.error("[LOGIN ERROR] Unexpected error:", error?.message || error);
         return NextResponse.json(
-            { error: "Internal server error during authentication" },
+            { error: "An unexpected error occurred. Please try again." },
             { status: 500 }
         );
     }

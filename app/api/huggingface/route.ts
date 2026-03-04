@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
         // Prepare a detailed error object to debug cPanel issues
         const errorDetail = {
-            message: error?.message || "Internal Server Error",
+            message: error?.message || "Something went wrong. Please try again.",
             name: error?.name,
             stack: error?.stack,
             stringified: String(error)

@@ -6,6 +6,7 @@ import { getApiUrl, getAssetUrl } from "@/lib/utils";
 import ConversionDetailModal from "@/app/components/ConversionDetailModal";
 import { useSortAndFilter } from "@/app/hooks/useSortAndFilter";
 import { SortIcon as BaseSortIcon } from "@/app/components/SortIcon";
+import { Pagination } from "@/app/components/Pagination";
 
 export default function AllConversionsPage() {
     const [conversions, setConversions] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export default function AllConversionsPage() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
 
-    const { search, setSearch, sortConfig, toggleSort, filteredAndSorted } = useSortAndFilter(
+    const { search, setSearch, sortConfig, toggleSort, filteredAndSorted, paginatedData, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, totalPages, totalItems } = useSortAndFilter(
         conversions,
         ['judul', 'text_input', 'user_nama', 'user_satker']
     );
@@ -75,7 +76,7 @@ export default function AllConversionsPage() {
         <div className="space-y-5 animate-fade-in">
             {/* Header */}
             <div>
-                <h1 className="text-2xl md:text-4xl font-bold text-orange-950 tracking-tight uppercase">Alih Audio Total</h1>
+                <h1 className="text-2xl md:text-4xl font-bold text-orange-950 tracking-tight uppercase">Rekap Alih Audio</h1>
                 <p className="text-orange-900/50 text-xs font-semibold uppercase tracking-widest mt-1">
                     Rekap seluruh konversi sistem
                     {conversions.length > 0 && (
@@ -130,7 +131,7 @@ export default function AllConversionsPage() {
                         MOBILE: Card Layout (< md)
                     ────────────────────────────────────────── */}
                     <div className="md:hidden space-y-3">
-                        {filteredAndSorted.map((c) => (
+                        {paginatedData.map((c) => (
                             <div key={c.id} className="glass rounded-[24px] p-4 border border-orange-200/50 shadow-sm space-y-3">
                                 {/* Judul */}
                                 {c.judul && (
@@ -268,7 +269,7 @@ export default function AllConversionsPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredAndSorted.map((c) => (
+                                    {paginatedData.map((c) => (
                                         <tr key={c.id} className="border-b border-orange-50/50 hover:bg-orange-50/30 transition-colors">
                                             <td className="px-6 py-4 text-[11px] font-medium text-orange-950" suppressHydrationWarning>
                                                 {new Date(c.created_at).toLocaleString('id-ID')}
@@ -359,6 +360,14 @@ export default function AllConversionsPage() {
                             </table>
                         </div>
                     </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={totalItems}
+                    />
                 </>
             )}
             {/* Detail Modal */}

@@ -66,7 +66,7 @@ export default function Sidebar({ user }: SidebarProps) {
         ];
 
     const adminItems = [
-        { name: "Alih Audio Total", icon: Globe, path: "/admin/total" },
+        { name: "Rekap Alih Audio", icon: Globe, path: "/admin/total" },
     ];
 
     const superAdminItems = [

@@ -47,6 +47,6 @@ export async function GET() {
         return response;
     } catch (error: any) {
         console.error("Dashboard Stats Error:", error);
-        return NextResponse.json({ error: "Internal server error: " + error.message }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 }

@@ -47,8 +47,7 @@ const FEMALE_ENGINES = [
 ];
 
 const MALE_ENGINES = [
-  { code: "huggingface", name: "Microsoft Edge TTS (Gratis)" },
-  { code: "puter", name: "OpenAI (Puter.js)" }
+  { code: "huggingface", name: "Microsoft Edge TTS (Gratis)" }
 ];
 
 const CustomSelect = ({
@@ -229,7 +228,7 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
             audioBlobs.push(await response.blob());
           } else if (maleEngine === "huggingface") {
             // TERHUBUNG DENGAN MICROSERVICE EKSTERNAL ANDA
-            const edgeApiUrl = process.env.NEXT_PUBLIC_EDGE_TTS_API_URL || "http://localhost:8080/api/edge-tts";
+            const edgeApiUrl = process.env.NEXT_PUBLIC_EDGE_TTS_API_URL || "https://api-alihaudio.vercel.app/api/edge-tts";
             const hfResponse = await fetch(edgeApiUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -254,7 +253,7 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
           // MODE PEREMPUAN: Mendukung Multi-Chunk
           if (femaleEngine === "edge") {
             // TERHUBUNG DENGAN MICROSERVICE EKSTERNAL ANDA
-            const edgeApiUrl = process.env.NEXT_PUBLIC_EDGE_TTS_API_URL || "http://localhost:8080/api/edge-tts";
+            const edgeApiUrl = process.env.NEXT_PUBLIC_EDGE_TTS_API_URL || "https://api-alihaudio.vercel.app/api/edge-tts";
             const hfResponse = await fetch(edgeApiUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -329,13 +328,13 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
       }
 
       const combinedBlob = new Blob(audioBlobs, { type: "audio/mpeg" });
-      const finalAudioUrl = URL.createObjectURL(combinedBlob);
-      setAudioUrl(finalAudioUrl);
       const computedProvider = mode === "puter" ? (maleEngine === "huggingface" ? "huggingface" : "puter-ai") : (femaleEngine === "edge" ? "edge" : "google-free");
       setProvider(computedProvider);
-      setShowSuccess(true);
+
+      setProgress(95); // Indicate saving phase
 
       // Auto-save to database with REAL MP3 data
+      let finalAudioSrc = "";
       try {
         const formData = new FormData();
         formData.append("text", text);
@@ -353,6 +352,7 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
         const data = await res.json();
         if (data.audioPath) {
           setSavedAudioPath(data.audioPath);
+          finalAudioSrc = getAssetUrl(data.audioPath);
           if (isGuest && onSuccess) {
             onSuccess();
           }
@@ -360,6 +360,10 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
       } catch (saveError) {
         console.error("Failed to save conversion to DB:", saveError);
       }
+
+      // Use the server-served file so that Range seeking works perfectly on MP3 files
+      setAudioUrl(finalAudioSrc || URL.createObjectURL(combinedBlob));
+      setShowSuccess(true);
 
     } catch (error: any) {
       console.error("TTS Error:", error);
@@ -408,7 +412,7 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 animate-slide-up">
+      <form onSubmit={handleSubmit} className="space-y-6 animate-slide-up relative z-30">
         {/* ── Input Judul ── */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 px-2">
@@ -437,11 +441,6 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
                   <label className="text-[10px] font-semibold text-orange-900/50 text-stone-500 tracking-[0.2em] uppercase whitespace-nowrap">Teks Sumber</label>
                 </div>
-                {mode === 'puter' && maleEngine === 'puter' && (
-                  <span className="text-[8px] font-semibold bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded-full border border-orange-500/20 animate-fade-in uppercase tracking-wider text-orange-400">
-                    Auto-detect Bahasa
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-3 sm:justify-end">
                 {text.length > (mode === 'free' ? 150 : 2500) && (
@@ -683,8 +682,8 @@ export default function TTSForm({ isGuest = false, onSuccess }: { isGuest?: bool
       {/* Result Dashboard */}
       {
         audioUrl && (
-          <div className="animate-slide-up group relative p-1">
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-700 rounded-[44px] blur-xl opacity-20 opacity-40 group-hover:opacity-30 transition duration-500"></div>
+          <div className="animate-slide-up group relative p-1 z-10 mt-4">
+            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-700 rounded-[44px] blur-xl opacity-20 group-hover:opacity-30 transition duration-500"></div>
 
             <div className="relative glass rounded-[32px] p-5 md:p-6 overflow-hidden">
               {/* Visual Glow Ornament */}

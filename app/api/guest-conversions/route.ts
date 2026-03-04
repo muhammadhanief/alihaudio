@@ -20,7 +20,7 @@ export async function GET() {
     } catch (error: any) {
         console.error("Fetch Guest Conversions Error:", error);
         return NextResponse.json(
-            { error: "Internal server error" },
+            { error: "Something went wrong. Please try again." },
             { status: 500 }
         );
     }

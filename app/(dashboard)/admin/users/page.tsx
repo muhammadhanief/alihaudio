@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Users, ShieldCheck, UserCog, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
+import { Users, ShieldCheck, UserCog, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter, AlertTriangle } from "lucide-react";
 import { getApiUrl } from "@/lib/utils";
 import { useSortAndFilter } from "@/app/hooks/useSortAndFilter";
 import { SortIcon as BaseSortIcon } from "@/app/components/SortIcon";
+import { Pagination } from "@/app/components/Pagination";
 import toast from "react-hot-toast";
 
 export default function UserManagementPage() {
@@ -12,7 +13,21 @@ export default function UserManagementPage() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    const [search, setSearch] = useState("");
+    // Modal state
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        targetNipp: string;
+        userName: string;
+        oldRole: string;
+        newRole: string;
+    }>({
+        isOpen: false,
+        targetNipp: "",
+        userName: "",
+        oldRole: "",
+        newRole: ""
+    });
+
     const [filterSatker, setFilterSatker] = useState("");
 
     useEffect(() => {
@@ -32,7 +47,22 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleUpdateRole = async (targetNipp: string, newRole: string) => {
+    const handleUpdateRoleClick = (targetNipp: string, userName: string, oldRole: string, newRole: string) => {
+        setConfirmModal({
+            isOpen: true,
+            targetNipp,
+            userName,
+            oldRole,
+            newRole
+        });
+    };
+
+    const confirmRoleUpdate = async () => {
+        const { targetNipp, newRole } = confirmModal;
+
+        // Optimistically close modal
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+
         const res = await fetch(getApiUrl("/api/admin/users"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -62,27 +92,19 @@ export default function UserManagementPage() {
         return unique.sort((a, b) => a.kd.localeCompare(b.kd));
     }, [users]);
 
-    // Sort and Filter Helper
-    const { search: _search, setSearch: _setSearch, sortConfig, toggleSort, filteredAndSorted: baseFilteredAndSorted } = useSortAndFilter(users, ['nama', 'nipp', 'nip_lama', 'kd_satker', 'satker']);
+    // Pre-filter by Satker
+    const usersFilteredBySatker = useMemo(() => {
+        if (!filterSatker) return users;
+        return users.filter((u: any) => u.kd_satker === filterSatker);
+    }, [users, filterSatker]);
 
-    // We bind local search to the hook's setter to keep the UI input synchronous
-    useEffect(() => {
-        _setSearch(search);
-    }, [search, _setSearch]);
+    // Sort and Filter Helper
+    const { search, setSearch, sortConfig, toggleSort, filteredAndSorted, paginatedData, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, totalPages, totalItems } = useSortAndFilter(
+        usersFilteredBySatker,
+        ['nama', 'nipp', 'nip_lama', 'kd_satker', 'satker']
+    );
 
     const SortIcon = ({ columnKey }: { columnKey: string }) => <BaseSortIcon columnKey={columnKey} sortConfig={sortConfig as any} />;
-
-    // Derived State (Filtered & Sorted)
-    const filteredAndSorted = useMemo(() => {
-        let result = baseFilteredAndSorted;
-
-        // Satker filter
-        if (filterSatker) {
-            result = result.filter(u => u.kd_satker === filterSatker);
-        }
-
-        return result;
-    }, [baseFilteredAndSorted, filterSatker]);
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -155,7 +177,7 @@ export default function UserManagementPage() {
                         MOBILE: Card Layout (< md)
                     ────────────────────────────────────────── */}
                     <div className="md:hidden space-y-3">
-                        {filteredAndSorted.map((u) => (
+                        {paginatedData.map((u) => (
                             <div key={u.nipp} className="glass rounded-[24px] p-4 border border-orange-200/50 shadow-sm space-y-3 flex flex-col">
                                 <div className="flex items-center gap-3">
                                     {u.foto_url ? (
@@ -194,7 +216,7 @@ export default function UserManagementPage() {
                                                 <UserCog className="h-3.5 w-3.5 text-orange-400" />
                                                 <select
                                                     value={u.role}
-                                                    onChange={(e) => handleUpdateRole(u.nipp, e.target.value)}
+                                                    onChange={(e) => handleUpdateRoleClick(u.nipp, u.nama, u.role, e.target.value)}
                                                     className={`text-[9px] font-semibold border rounded-lg px-2 py-1 outline-none hover:border-orange-500 transition-colors cursor-pointer ${u.role === 'superadmin' ? 'bg-purple-100 border-purple-200 text-purple-700' :
                                                         u.role === 'admin' ? 'bg-blue-100 border-blue-200 text-blue-700' :
                                                             'bg-zinc-100 border-zinc-200 text-zinc-700'
@@ -251,7 +273,7 @@ export default function UserManagementPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredAndSorted.map((u) => (
+                                {paginatedData.map((u) => (
                                     <tr key={u.nipp} className="border-b border-orange-50/50 hover:bg-orange-50/30 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
@@ -297,7 +319,7 @@ export default function UserManagementPage() {
                                                         <UserCog className="h-4 w-4 text-orange-400" />
                                                         <select
                                                             value={u.role}
-                                                            onChange={(e) => handleUpdateRole(u.nipp, e.target.value)}
+                                                            onChange={(e) => handleUpdateRoleClick(u.nipp, u.nama, u.role, e.target.value)}
                                                             className="text-[10px] font-semibold border border-orange-200 rounded-lg px-3 py-1.5 outline-none hover:border-orange-500 transition-colors cursor-pointer"
                                                             style={{ color: '#1c0a00', backgroundColor: '#fff7ed' }}
                                                         >
@@ -316,7 +338,81 @@ export default function UserManagementPage() {
                             </tbody>
                         </table>
                     </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={totalItems}
+                    />
                 </>
+            )}
+
+            {/* Custom Modal Konfirmasi */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-orange-950/20 backdrop-blur-sm animate-fade-in" style={{ zIndex: 9999 }}>
+                    <div
+                        className="glass relative w-full max-w-md p-6 overflow-hidden rounded-[32px] border border-orange-200/50 shadow-2xl space-y-5"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+                    >
+                        {/* Motif Background Hiasan */}
+                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-orange-100/40 to-transparent -z-10" />
+                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl -z-10" />
+
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className={`p-4 rounded-full ${confirmModal.newRole === 'superadmin' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'} shadow-sm`}>
+                                {confirmModal.newRole === 'superadmin' ? (
+                                    <ShieldCheck className="w-8 h-8" />
+                                ) : (
+                                    <AlertTriangle className="w-8 h-8" />
+                                )}
+                            </div>
+
+                            <div>
+                                <h3 className="text-xl font-bold text-orange-950 uppercase tracking-tight">Kofirmasi Perubahan Role</h3>
+                                <p className="text-sm font-medium text-orange-900/60 mt-1 line-clamp-2 px-2">
+                                    Pengguna: <strong className="text-orange-950">{confirmModal.userName}</strong>
+                                </p>
+                            </div>
+
+                            <div className="w-full bg-orange-50/50 rounded-2xl p-4 border border-orange-100">
+                                {confirmModal.newRole === 'superadmin' ? (
+                                    <span className="text-xs font-semibold text-red-700/80 leading-relaxed block text-left">
+                                        <b className="text-red-700 uppercase tracking-widest text-[10px] block mb-1">PERINGATAN KRITIS!</b>
+                                        Anda akan memberikan akses <b className="text-purple-700">SUPERADMIN</b> kepada pengguna ini.
+                                        Karena role ini setingkat dengan Anda, Anda <b>TIDAK AKAN BISA MENGUBAH KEMBALI</b> role pengguna ini (tidak bisa di-undo).
+                                    </span>
+                                ) : (
+                                    <span className="text-sm font-medium text-orange-950/80 leading-relaxed block">
+                                        Apakah Anda yakin ingin mengubah role dari <b className="uppercase">{confirmModal.oldRole}</b> menjadi <b className="uppercase">{confirmModal.newRole}</b>?
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => {
+                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                    loadUsers(); // Reset value dropdown ke data asli
+                                }}
+                                className="flex-1 py-3 px-4 rounded-2xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 text-xs font-bold uppercase tracking-widest transition-all focus:ring-2 focus:ring-zinc-500/20 active:scale-95 outline-none"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmRoleUpdate}
+                                className={`flex-1 py-3 px-4 rounded-2xl text-white text-xs font-bold uppercase tracking-widest transition-all focus:ring-2 active:scale-95 outline-none shadow-md ${confirmModal.newRole === 'superadmin'
+                                        ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500/20 shadow-red-500/20'
+                                        : 'bg-orange-500 hover:bg-orange-600 focus:ring-orange-500/20 shadow-orange-500/20'
+                                    }`}
+                            >
+                                Ya, Lanjutkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

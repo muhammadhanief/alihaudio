@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -10,10 +10,15 @@ interface SortConfig {
 export function useSortAndFilter<T>(
     data: T[],
     searchKeys: (keyof T)[] = [],
-    defaultSortContext?: { key: string; direction: SortDirection }
+    defaultSortContext?: { key: string; direction: SortDirection },
+    initialItemsPerPage: number | 'all' = 10
 ) {
     const [search, setSearch] = useState("");
     const [sortConfig, setSortConfig] = useState<SortConfig>(defaultSortContext || { key: '', direction: null });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(initialItemsPerPage);
 
     const toggleSort = (key: string) => {
         let direction: SortDirection = 'asc';
@@ -21,6 +26,11 @@ export function useSortAndFilter<T>(
         else if (sortConfig.key === key && sortConfig.direction === 'desc') direction = null;
         setSortConfig({ key, direction });
     };
+
+    // Reset to page 1 on search
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, itemsPerPage]);
 
     const filteredAndSorted = useMemo(() => {
         let result = [...data];
@@ -66,11 +76,29 @@ export function useSortAndFilter<T>(
         return result;
     }, [data, search, sortConfig, searchKeys]);
 
+    const totalItems = filteredAndSorted.length;
+
+    const paginatedData = useMemo(() => {
+        if (itemsPerPage === 'all') return filteredAndSorted;
+        const startIdx = (currentPage - 1) * itemsPerPage;
+        return filteredAndSorted.slice(startIdx, startIdx + itemsPerPage);
+    }, [filteredAndSorted, currentPage, itemsPerPage]);
+
+    const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(totalItems / itemsPerPage);
+
     return {
         search,
         setSearch,
         sortConfig,
         toggleSort,
-        filteredAndSorted
+        filteredAndSorted,
+        // Pagination exports
+        paginatedData,
+        currentPage,
+        setCurrentPage,
+        itemsPerPage,
+        setItemsPerPage,
+        totalPages,
+        totalItems
     };
 }

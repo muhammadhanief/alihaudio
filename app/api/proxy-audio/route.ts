@@ -66,6 +66,20 @@ export async function GET(req: NextRequest) {
     const url = req.nextUrl.searchParams.get("url");
     if (!url) return new Response("URL missing", { status: 400 });
 
+    // 🛡️ SECURITY: Whitelist Domain untuk cegah Path Traversal & SSRF
+    // Hanya izinkan domain SoundOfText atau Google (di mana file audio asli berada)
+    try {
+        const parsedUrl = new URL(url);
+        const allowedHosts = ["translate.google.com", "api.soundoftext.com", "storage.googleapis.com"];
+        const isAllowed = allowedHosts.some(host => parsedUrl.host.endsWith(host));
+
+        if (!isAllowed || parsedUrl.protocol !== "https:") {
+            return new Response("Forbidden: Domain or Protocol not allowed", { status: 403 });
+        }
+    } catch (e) {
+        return new Response("Invalid URL", { status: 400 });
+    }
+
     try {
         const res = await fetch(url);
         const blob = await res.blob();

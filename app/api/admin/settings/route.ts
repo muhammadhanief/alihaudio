@@ -59,6 +59,6 @@ export async function PUT(req: Request) {
         return NextResponse.json({ success: true, message: "Settings updated successfully" });
     } catch (error: any) {
         console.error("Update Settings Error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 }

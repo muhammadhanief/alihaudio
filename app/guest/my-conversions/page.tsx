@@ -6,6 +6,7 @@ import { getApiUrl, getAssetUrl } from "@/lib/utils";
 import ConversionDetailModal from "@/app/components/ConversionDetailModal";
 import { useSortAndFilter } from "@/app/hooks/useSortAndFilter";
 import { SortIcon as BaseSortIcon } from "@/app/components/SortIcon";
+import { Pagination } from "@/app/components/Pagination";
 
 export default function GuestMyConversions() {
     const [conversions, setConversions] = useState<any[]>([]);
@@ -14,7 +15,7 @@ export default function GuestMyConversions() {
     const [selectedConversion, setSelectedConversion] = useState<any>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-    const { search, setSearch, sortConfig, toggleSort, filteredAndSorted } = useSortAndFilter(
+    const { search, setSearch, sortConfig, toggleSort, filteredAndSorted, paginatedData, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, totalPages, totalItems } = useSortAndFilter(
         conversions,
         ['judul', 'text_input']
     );
@@ -102,7 +103,7 @@ export default function GuestMyConversions() {
                         MOBILE: Card Layout (< md)
                     ────────────────────────────────────────── */}
                     <div className="md:hidden space-y-3">
-                        {filteredAndSorted.map((c) => (
+                        {paginatedData.map((c) => (
                             <div key={c.id} className="glass rounded-[24px] p-4 border border-orange-200/50 shadow-sm space-y-3">
                                 {/* Judul */}
                                 {c.judul && (
@@ -219,7 +220,7 @@ export default function GuestMyConversions() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredAndSorted.map((c) => (
+                                    {paginatedData.map((c) => (
                                         <tr key={c.id} className="border-b border-orange-50/50 hover:bg-orange-50/30 transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -303,6 +304,14 @@ export default function GuestMyConversions() {
                             </table>
                         </div>
                     </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        totalItems={totalItems}
+                    />
                 </>
             )}
             {/* Detail Modal */}

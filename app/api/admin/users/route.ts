@@ -43,7 +43,7 @@ export async function GET() {
         return response;
     } catch (error) {
         console.error("GET Users Error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 }
 
@@ -101,6 +101,6 @@ export async function POST(req: Request) {
         return response;
     } catch (error) {
         console.error("POST User Role Update Error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
     }
 }
