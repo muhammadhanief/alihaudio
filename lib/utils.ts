@@ -5,8 +5,8 @@
  * http://localhost:3000/ or https://domain.com/alihaudio/
  */
 
-const BASE_PATH = "/alihaudio";
-// const BASE_PATH = "";
+// Gunakan dari .env.local, jika kosong maka akan kembali ke "" (root)
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const getApiUrl = (endpoint: string) => {
     let [path, query] = endpoint.split('?');

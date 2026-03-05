@@ -35,7 +35,7 @@ export async function GET() {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === "production",
                     sameSite: "lax",
-                    path: "/alihaudio",
+                    path: process.env.NEXT_PUBLIC_BASE_PATH || "/",
                     maxAge: 60 * 60 * 24, // 24 hours
                 });
             }

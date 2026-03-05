@@ -156,7 +156,7 @@ export async function POST(req: Request) {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production", // Pakai true HANYA di hosting (Production)
             sameSite: "lax",
-            path: "/alihaudio",
+            path: process.env.NEXT_PUBLIC_BASE_PATH || "/",
             maxAge: 60 * 60 * 24, // 24 hours
         });
 

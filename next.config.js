@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/alihaudio',
-  assetPrefix: '/alihaudio/', // Tambahkan ini (dengan slash di akhir)
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH ? `${process.env.NEXT_PUBLIC_BASE_PATH}/` : undefined,
   poweredByHeader: false,
   images: {
     unoptimized: true
@@ -43,7 +43,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               // Script: hanya dari server sendiri (Next.js butuh unsafe-inline untuk hydration)
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              process.env.NODE_ENV === 'production' ? "script-src 'self' 'unsafe-inline'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               // Style: hanya dari server sendiri + inline (Tailwind/CSS-in-JS butuh ini)
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               // Gambar: dari server sendiri, data URI, blob, dan CDN BPS serta FlagCDN
